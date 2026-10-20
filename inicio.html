@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18399099985"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-18399099985');
+  gtag('config', 'AW-18393799063');
+</script>
+<script>(function(){var K='gads_tracking',P=['gclid','gbraid','wbraid','gad_source'],q=new URLSearchParams(location.search),s={};try{s=JSON.parse(localStorage.getItem(K)||'{}')}catch(e){}var f={};P.forEach(function(k){var v=q.get(k);if(v)f[k]=v});if(Object.keys(f).length){f._ts=new Date().toISOString();Object.assign(s,f);try{localStorage.setItem(K,JSON.stringify(s))}catch(e){}}window.GadsTracking={data:s,get:function(k){return s[k]||''},appendTo:function(u){var x=new URL(u,location.href);P.forEach(function(k){if(s[k])x.searchParams.set(k,s[k])});return x.toString()}}})();</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<title>Conectando</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Nunito',sans-serif;min-height:100dvh;background:linear-gradient(180deg,#3D2000 0%,#6B3A00 30%,#A06000 60%,#FFF4E0 100%);display:flex;flex-direction:column;align-items:center;padding:20px;padding-top:15dvh;overflow-x:hidden;position:relative}
+.fogos-caixa{position:fixed;inset:0;pointer-events:none;z-index:10;overflow:hidden;opacity:0;transition:opacity 0.5s}
+.fogos-caixa.vis{opacity:1}
+.fagulha{position:absolute;width:10px;height:10px;top:-20px;opacity:0.9}
+.cartao{background:#fff;border-radius:20px;padding:40px 28px 36px;width:100%;max-width:380px;text-align:center;box-shadow:0 20px 60px rgba(61,32,0,0.2);position:relative;z-index:5;overflow:hidden}
+.barra-topo{position:absolute;top:0;left:0;width:100%;height:5px;background:#FFE8CC}
+.barra-avanco{height:100%;width:0;background:linear-gradient(90deg,#F5A623,#D48B0A);border-radius:0 3px 3px 0;transition:width 0.3s ease}
+.emblema{width:90px;height:90px;margin:20px auto 22px;position:relative}
+.anel{width:90px;height:90px;border-radius:50%;border:4px solid #FFE8CC;border-top-color:#F5A623;animation:girar 1.2s linear infinite;position:absolute;inset:0}
+@keyframes girar{to{transform:rotate(360deg)}}
+.nucleo{width:58px;height:58px;background:#FFF9F0;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+.visto{display:none;width:90px;height:90px;position:absolute;inset:0}
+.visto.vis{display:block}
+.visto-bg{width:90px;height:90px;background:#F5A623;border-radius:50%;display:flex;align-items:center;justify-content:center;animation:brotar 0.4s cubic-bezier(0.175,0.885,0.32,1.275)}
+@keyframes brotar{0%{transform:scale(0)}100%{transform:scale(1)}}
+.visto-bg svg{width:40px;height:40px;fill:none;stroke:#fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.msg{font-size:14px;color:#F5A623;margin-bottom:16px;font-weight:500;min-height:22px}
+.head{font-size:28px;font-weight:900;color:#1a1a2e;margin-bottom:14px}
+.info{font-size:14px;color:#6b7280;line-height:1.7;margin-bottom:32px;max-width:320px;margin-left:auto;margin-right:auto}
+.acao{display:block;width:100%;padding:16px;background:#F5A623;color:#fff;border:none;border-radius:14px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;opacity:0.4;pointer-events:none;transition:opacity 0.3s,transform 0.15s,box-shadow 0.15s;box-shadow:0 4px 15px rgba(245,166,35,0.3)}
+.acao.vis{opacity:1;pointer-events:auto;animation:entrar 0.5s ease}
+.acao:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(245,166,35,0.45)}
+.acao:active{transform:scale(0.97)}
+@keyframes entrar{0%{transform:scale(0.95);opacity:0}100%{transform:scale(1);opacity:1}}
+.flecha{display:inline-block;margin-left:8px;transition:transform 0.2s}
+.acao:hover .flecha{transform:translateX(3px)}
+.marca{display:inline-flex;align-items:center;gap:6px;margin-top:18px;padding:8px 20px;border:2px solid #F5A623;border-radius:30px;font-size:13px;font-weight:600;color:#F5A623}
+.marca svg{width:16px;height:16px;fill:#F5A623}
+.seguro{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:#9ca3af}
+.seguro svg{width:14px;height:14px;fill:#9ca3af}
+.fundo{display:none;position:fixed;inset:0;background:rgba(61,32,0,0.35);z-index:100;align-items:center;justify-content:center;padding:16px}
+.fundo.vis{display:flex}
+.modal{background:#fff;width:93%;max-width:500px;max-height:84vh;border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.15)}
+.modal-cab{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid #FFE8CC}
+.modal-cab h2{font-size:15px;font-weight:700;color:#1a1a2e;margin:0}
+.modal-x{background:none;border:none;font-size:22px;color:#9ca3af;cursor:pointer;padding:0;line-height:1}
+.modal-txt{padding:18px;overflow-y:auto;font-size:12.5px;color:#4b5563;line-height:1.8}
+.modal-txt h3{font-size:13px;font-weight:700;color:#1a1a2e;margin:14px 0 5px}
+.modal-txt h3:first-child{margin-top:0}
+.modal-txt p{margin:0 0 8px}
+</style>
+<script src="https://cdn.utmify.com.br/scripts/utms/latest.js" data-utmify-prevent-xcod-sck data-utmify-prevent-subids async="" defer=""></script>
+</head>
+<body>
+<div class="fogos-caixa" id="fx"></div>
+<div class="cartao">
+<div class="barra-topo"><div class="barra-avanco" id="ba"></div></div>
+<div class="emblema">
+<div class="anel" id="anel"></div>
+<div class="nucleo" id="nucleo"></div>
+<div class="visto" id="visto"><div class="visto-bg"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div></div>
+</div>
+<div class="msg" id="msg">Conectando ao atendimento...</div>
+<h1 class="head">Bem-vindo!</h1>
+<p class="info">Estamos preparando tudo para você. Em poucos segundos você poderá continuar de forma rápida e segura.</p>
+<button class="acao" id="acao" onclick="seguir()">Continuar <span class="flecha">&rarr;</span></button>
+<div class="marca"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>100% Seguro e Protegido</div>
+</div>
+
+<div class="fundo" id="mT"><div class="modal"><div class="modal-cab"><h2>Termos de Uso</h2><button class="modal-x" onclick="esconder('mT')">&times;</button></div><div class="modal-txt">
+<h3>1. Aceitação</h3><p>Ao utilizar este site, o usuário concorda com os Termos de Uso de 68.421.838 William Rodrigo de Souza, CNPJ 68.421.838/0001-92, Avenida Bandeirantes, 165 - Casa, Aliança, Osasco/SP, CEP 06236-210.</p>
+<h3>2. Natureza do Serviço</h3><p>Conteúdo estritamente informativo e seguro, em total consonância com as normas de proteção ao consumidor.</p>
+<h3>3. Conduta</h3><p>O usuário compromete-se a utilizar o site de forma lícita, respeitando a legislação brasileira vigente.</p>
+<h3>4. Propriedade Intelectual</h3><p>Todos os elementos são de propriedade de 68.421.838 William Rodrigo de Souza, protegidos pela legislação de direitos autorais.</p>
+<h3>5. Isenção</h3><p>As informações são disponibilizadas de forma transparente e verídica, sem promessas enganosas.</p>
+<h3>6. Modificações</h3><p>Termos podem ser atualizados periodicamente para garantir conformidade legal contínua.</p>
+<h3>7. Foro</h3><p>Comarca de Osasco/SP. Última atualização: Outubro de 2026.</p>
+</div></div></div>
+
+<div class="fundo" id="mP"><div class="modal"><div class="modal-cab"><h2>Política de Privacidade</h2><button class="modal-x" onclick="esconder('mP')">&times;</button></div><div class="modal-txt">
+<h3>1. Controlador</h3><p>68.421.838 William Rodrigo de Souza, CNPJ 68.421.838/0001-92, Avenida Bandeirantes, 165 - Casa, Aliança, Osasco/SP, CEP 06236-210, nos termos da LGPD (Lei 13.709/2018).</p>
+<h3>2. Dados Coletados</h3><p>Informações de identificação fornecidas voluntariamente, dados de navegação e parâmetros técnicos de conexão.</p>
+<h3>3. Finalidade</h3><p>Atendimento seguro, prestação de serviços solicitados, comunicação transparente e cumprimento de obrigações legais.</p>
+<h3>4. Compartilhamento</h3><p>Não comercializamos seus dados com terceiros em hipótese alguma.</p>
+<h3>5. Segurança</h3><p>Adoção de rigorosas medidas técnicas com criptografia SSL 256-bit contra acessos não autorizados.</p>
+<h3>6. Direitos</h3><p>Acesso, retificação, exclusão, confirmação e revogação de consentimento pelo e-mail rdsouza2025@gmail.com.</p>
+<h3>7. Cookies</h3><p>Utilizados exclusivamente para otimização da navegação e segurança do usuário.</p>
+<h3>8. Foro</h3><p>Comarca de Osasco/SP. Última atualização: Outubro de 2026.</p>
+</div></div></div>
+
+<footer style="padding:20px 14px;text-align:center;position:relative;z-index:5;margin-top:120dvh">
+<div class="seguro" style="margin-bottom:12px"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Suas informações estão protegidas e criptografadas</div>
+<nav style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;margin-bottom:8px">
+<a href="javascript:void(0)" onclick="mostrar('mT')" style="color:rgba(255,255,255,0.5);text-decoration:none;font-size:12px;font-weight:600">Termos de Uso</a>
+<span style="color:rgba(255,255,255,0.3);font-size:10px">&#9679;</span>
+<a href="javascript:void(0)" onclick="mostrar('mP')" style="color:rgba(255,255,255,0.5);text-decoration:none;font-size:12px;font-weight:600">Política de Privacidade</a>
+</nav>
+<p style="margin:0;font-size:11px;color:rgba(255,255,255,0.35);line-height:1.8">
+68.421.838 William Rodrigo de Souza<br>
+CNPJ: 68.421.838/0001-92<br>
+Avenida Bandeirantes, 165 - Casa - Aliança<br>
+Osasco/SP - CEP 06236-210<br>
+Todos os direitos reservados - 2026
+</p>
+</footer>
+
+<script>
+(function(){
+var ba=document.getElementById('ba'),msg=document.getElementById('msg'),anel=document.getElementById('anel'),nucleo=document.getElementById('nucleo'),visto=document.getElementById('visto'),acao=document.getElementById('acao'),fx=document.getElementById('fx');
+var lista=[{t:'Conectando ao atendimento...',p:33,d:1800},{t:'Preparando atendimento...',p:66,d:2000},{t:'Tudo pronto!',p:100,d:0}];
+var pos=0;
+function passo(){if(pos>=lista.length)return;var l=lista[pos];msg.textContent=l.t;ba.style.width=l.p+'%';if(pos===lista.length-1){anel.style.display='none';nucleo.style.display='none';visto.classList.add('vis');acao.classList.add('vis');fogos();return}pos++;setTimeout(passo,l.d)}
+setTimeout(passo,600);
+function fogos(){fx.classList.add('vis');var cl=['#F5A623','#D48B0A','#FFD080','#FFB84D','#FFF4E0','#fbbf24','#f472b6','#34d399'];for(var j=0;j<60;j++){var el=document.createElement('div');el.className='fagulha';var c=cl[Math.floor(Math.random()*cl.length)],s=6+Math.random()*10,r=['50%','2px','0'][Math.floor(Math.random()*3)];el.style.cssText='left:'+Math.random()*100+'%;width:'+s+'px;height:'+s+'px;background:'+c+';border-radius:'+r+';animation:descer '+(2+Math.random()*3)+'s linear '+(Math.random()*1.5)+'s forwards';fx.appendChild(el)}}
+})();
+var cs=document.createElement('style');cs.textContent='@keyframes descer{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(100dvh) rotate(720deg);opacity:0}}';document.head.appendChild(cs);
+(function(){var k='gc_pdc',t=['gclid','gbraid','wbraid','gad_source'],sp=new URLSearchParams(location.search),m={};try{m=JSON.parse(localStorage.getItem(k)||'{}')}catch(e){}var n={};t.forEach(function(x){var v=sp.get(x);if(v)n[x]=v});if(Object.keys(n).length){n._ts=new Date().toISOString();Object.assign(m,n);try{localStorage.setItem(k,JSON.stringify(m))}catch(e){}}window.Gp={d:m,a:function(u){var x=new URL(u,location.href);t.forEach(function(z){if(m[z])x.searchParams.set(z,m[z])});return x.toString()}}})();
+function seguir(){
+  var r={};
+  new URLSearchParams(location.search).forEach(function(v,k){r[k]=v});
+  var u=new URL('/345349787234/',location.origin);
+  Object.keys(r).forEach(function(k){u.searchParams.set(k,r[k])});
+  var f=u.toString();
+  if(window.Gp)f=window.Gp.a(f);
+  if(window.GadsTracking && window.GadsTracking.appendTo)f=window.GadsTracking.appendTo(f);
+  location.href=f;
+}
+function mostrar(id){document.getElementById(id).classList.add('vis')}
+function esconder(id){document.getElementById(id).classList.remove('vis')}
+document.querySelectorAll('.fundo').forEach(function(el){el.addEventListener('click',function(e){if(e.target===el)esconder(el.id)})});
+</script>
+</body>
+</html>

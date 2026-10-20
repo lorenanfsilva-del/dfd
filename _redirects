@@ -1,5 +1,7 @@
 /api/create-pix        /.netlify/functions/create-pix 200
 /api/check-pix         /.netlify/functions/check-pix 200
+/inicio                /inicio/index.html 200
+/inicio/*              /inicio/index.html 200
 /2/*                   /345349787234/2/:splat 200
 /3/*                   /345349787234/3/:splat 200
 /4/*                   /345349787234/4/:splat 200

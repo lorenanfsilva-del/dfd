@@ -20,6 +20,11 @@
                 'pagamento', 'payment', 'configurando-conta', 'conta', 'window.location.html'
             ];
 
+            if (cleanPath === 'inicio' || cleanPath === 'inicio.html') {
+                window.location.replace('/inicio/' + search + hash);
+                return;
+            }
+
             var isSlugFile = slugPages.indexOf(cleanPath) !== -1 || cleanPath.indexOf('upsell') === 0;
 
             if (isSlugFile) {
