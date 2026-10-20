@@ -1,0 +1,13 @@
+{
+  "name": "funil-emprestimo",
+  "version": "1.0.0",
+  "description": "Funil SuperSim integrado com gateway Bynet",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx serve ."
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

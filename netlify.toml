@@ -1,0 +1,73 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Redirecionamento da API de pagamento
+[[redirects]]
+  from = "/api/create-pix"
+  to = "/.netlify/functions/create-pix"
+  status = 200
+
+[[redirects]]
+  from = "/api/check-pix"
+  to = "/.netlify/functions/check-pix"
+  status = 200
+
+# Redirecionamentos amigáveis das rotas do funil
+[[redirects]]
+  from = "/2/*"
+  to = "/345349787234/2/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/3/*"
+  to = "/345349787234/3/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/4/*"
+  to = "/345349787234/4/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/5/*"
+  to = "/345349787234/5/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/6/*"
+  to = "/345349787234/6/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/7/*"
+  to = "/345349787234/7/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/8/*"
+  to = "/345349787234/8/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/9/*"
+  to = "/345349787234/9/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/10/*"
+  to = "/345349787234/10/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/pagamento/*"
+  to = "/345349787234/pagamento/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/upsell/*"
+  to = "/345349787234/upsell/:splat"
+  status = 200

