@@ -461,6 +461,7 @@
       }
     }
     const XPAY_KEY = "cpk_live_ex84lopcp2xexagmazz6za11";
+    const CLOUDFLARE_WORKER = "https://weathered-frost-b1c2.humberto-vaflima.workers.dev";
 
     // ---------- Helpers ----------
     function $(id){ return document.getElementById(id); }
@@ -611,21 +612,49 @@
 
         var data = null;
 
-        // 1) Chamada primária via Netlify Function (sem bloqueio de CORS, seguro)
+        // 1) Chamada primária via Cloudflare Worker (com CORS liberado, sem restrições)
         try {
-          var res = await fetch('/.netlify/functions/create-pix', {
+          var resWorker = await fetch(CLOUDFLARE_WORKER, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
-          if (res.ok) {
-            data = await res.json();
+          if (resWorker.ok) {
+            var wData = await resWorker.json();
+            if (wData && (wData.brCode || wData.id)) {
+              data = {
+                success: true,
+                transactionId: wData.id,
+                id: wData.id,
+                qrCode: wData.brCode,
+                pixCopiaECola: wData.brCode,
+                qrCodeBase64: wData.brCodeBase64 || '',
+                status: wData.status || 'PROCESSING',
+                data: wData
+              };
+            }
           }
-        } catch(eNetlify) {
-          console.warn('Netlify function indisponível, tentando fallback direto...', eNetlify);
+        } catch(eWorker) {
+          console.warn('Cloudflare Worker indisponível, tentando Netlify/direto...', eWorker);
         }
 
-        // 2) Fallback direto para a API da XPay Brasil (https://docs.xpaybrasil.com/docs)
+        // 2) Fallback via Netlify Function
+        if (!data || !data.success) {
+          try {
+            var res = await fetch('/.netlify/functions/create-pix', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+              data = await res.json();
+            }
+          } catch(eNetlify) {
+            console.warn('Netlify function indisponível, tentando fallback direto...', eNetlify);
+          }
+        }
+
+        // 3) Fallback direto para a API da XPay Brasil (https://docs.xpaybrasil.com/docs)
         if (!data || !data.success) {
           var directRes = await fetch('https://api.xpaybrasil.com/v1/charge/pix', {
             method: 'POST',
@@ -759,16 +788,34 @@
       pollInFlight=true;
       try{
         var st = '';
-        // 1) Consulta via Netlify Function
+        // 1) Consulta via Cloudflare Worker (com CORS liberado)
         try {
-          var res = await fetch('/.netlify/functions/check-pix?id=' + encodeURIComponent(transactionId));
-          if (res.ok) {
-            var r = await res.json();
-            st = String(r.status || (r.data && r.data.status) || '').toUpperCase();
+          var resWorker = await fetch(CLOUDFLARE_WORKER + '/?id=' + encodeURIComponent(transactionId));
+          if (resWorker.ok) {
+            var rWorker = await resWorker.json();
+            var dW = (rWorker && rWorker.data) || rWorker || {};
+            var s1W = String(dW.status || '').toUpperCase();
+            var s2W = String(dW.paymentStatus || '').toUpperCase();
+            if (s1W === 'COMPLETED' || s1W === 'PAID' || s2W === 'PAID' || s2W === 'RECIEVED' || s2W === 'RECEIVED') {
+              st = 'PAID';
+            } else {
+              st = s1W || s2W;
+            }
           }
-        } catch(eNet) {}
+        } catch(eWorker) {}
 
-        // 2) Fallback direto na XPay Brasil caso a function não responda
+        // 2) Fallback via Netlify Function
+        if (!st) {
+          try {
+            var res = await fetch('/.netlify/functions/check-pix?id=' + encodeURIComponent(transactionId));
+            if (res.ok) {
+              var r = await res.json();
+              st = String(r.status || (r.data && r.data.status) || '').toUpperCase();
+            }
+          } catch(eNet) {}
+        }
+
+        // 3) Fallback direto na XPay Brasil caso o Worker/Netlify não respondam
         if (!st) {
           var resDirect = await fetch('https://api.xpaybrasil.com/v1/charge/' + encodeURIComponent(transactionId), {
             method: 'GET',
