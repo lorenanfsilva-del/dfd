@@ -460,7 +460,7 @@
         totalEl.textContent = PRICE_MAP[OFFER];
       }
     }
-    const TECHBYNET_KEY = "f3496353-b145-431a-91ac-1e47968b5b6f";
+    const XPAY_KEY = "cpk_live_ex84lopcp2xexagmazz6za11";
 
     // ---------- Helpers ----------
     function $(id){ return document.getElementById(id); }
@@ -599,15 +599,14 @@
 
         var payload = {
           amount: amountInCents,
+          expiresIn: 1800,
+          externalId: 'charge_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
           customer: {
             name: customer.name || 'Cliente',
             email: emailClean,
-            document: docClean,
-            cpf: docClean,
+            taxId: docClean,
             phone: customer.phone || '11999999999'
-          },
-          title: desc,
-          description: desc
+          }
         };
 
         var data = null;
@@ -626,81 +625,40 @@
           console.warn('Netlify function indisponível, tentando fallback direto...', eNetlify);
         }
 
-        // 2) Fallback direto para a API da Bynet (https://docs.techbynet.com/)
+        // 2) Fallback direto para a API da XPay Brasil (https://docs.xpaybrasil.com/docs)
         if (!data || !data.success) {
-          var directPayload = {
-            amount: amountInCents,
-            paymentMethod: "PIX",
-            customer: {
-              name: customer.name || 'Cliente',
-              email: emailClean,
-              document: { number: docClean, type: "CPF" },
-              phone: customer.phone || '11999999999',
-              externalRef: 'cli-' + Date.now(),
-              address: {
-                street: "Avenida Paulista",
-                streetNumber: "1000",
-                complement: "Sala 1",
-                zipCode: "01310-100",
-                neighborhood: "Bela Vista",
-                city: "Sao Paulo",
-                state: "SP",
-                country: "BR"
-              }
-            },
-            shipping: {
-              fee: 0,
-              address: {
-                street: "Avenida Paulista",
-                streetNumber: "1000",
-                complement: "Sala 1",
-                zipCode: "01310-100",
-                neighborhood: "Bela Vista",
-                city: "Sao Paulo",
-                state: "SP",
-                country: "BR"
-              }
-            },
-            items: [{
-              title: desc,
-              unitPrice: amountInCents,
-              quantity: 1,
-              tangible: false,
-              externalRef: 'item-' + Date.now()
-            }],
-            pix: { expiresInDays: 1 }
-          };
-
-          var directRes = await fetch('https://api-gateway.techbynet.com/api/user/transactions', {
+          var directRes = await fetch('https://api.xpaybrasil.com/v1/charge/pix', {
             method: 'POST',
             headers: {
-              'x-api-key': TECHBYNET_KEY,
-              'User-Agent': 'AtivoB2B/1.0',
+              'X-API-KEY': XPAY_KEY,
+              'Authorization': 'Bearer ' + XPAY_KEY,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(directPayload)
+            body: JSON.stringify(payload)
           });
           var directData = await directRes.json();
-          if (directData && directData.data) {
+          if (directData && (directData.brCode || directData.id)) {
             data = {
               success: true,
-              transactionId: directData.data.id,
-              qrCode: directData.data.qrCode || (directData.data.pix && directData.data.pix.qrcode),
-              pixCopiaECola: directData.data.qrCode || (directData.data.pix && directData.data.pix.qrcode),
-              status: directData.data.status,
-              data: directData.data
+              transactionId: directData.id,
+              id: directData.id,
+              qrCode: directData.brCode,
+              pixCopiaECola: directData.brCode,
+              qrCodeBase64: directData.brCodeBase64 || '',
+              status: directData.status || 'PROCESSING',
+              data: directData
             };
           } else {
             throw new Error((directData && (directData.message || directData.error)) || 'Erro ao gerar PIX');
           }
         }
 
-        var qrCodeText = data && (data.pixCopiaECola || data.qrCode || (data.data && (data.data.qrCode || (data.data.pix && data.data.pix.qrcode))));
+        var qrCodeText = data && (data.pixCopiaECola || data.qrCode || (data.data && (data.data.brCode || data.data.qrCode)));
         var txId = data && (data.transactionId || data.id || (data.data && data.data.id));
-        var qrCodeBase64 = (data && data.qrCodeUrl) || (data && data.data && data.data.pix && data.data.pix.qrcode_base64) || '';
+        var qrCodeBase64 = (data && data.qrCodeBase64) || (data && data.data && (data.data.brCodeBase64 || data.data.qrCodeBase64)) || '';
 
         if (!qrCodeText || !txId) {
-          console.error('Bynet Error:', data);
+          console.error('XPay Error:', data);
           throw new Error((data && (data.message || data.error)) || 'Erro ao gerar PIX');
         }
 
@@ -810,19 +768,26 @@
           }
         } catch(eNet) {}
 
-        // 2) Fallback direto na Bynet caso a function não responda
+        // 2) Fallback direto na XPay Brasil caso a function não responda
         if (!st) {
-          var resDirect = await fetch('https://api-gateway.techbynet.com/api/user/transactions/' + encodeURIComponent(transactionId) + '/summary', {
+          var resDirect = await fetch('https://api.xpaybrasil.com/v1/charge/' + encodeURIComponent(transactionId), {
             method: 'GET',
             headers: {
-              'x-api-key': TECHBYNET_KEY,
-              'User-Agent': 'AtivoB2B/1.0',
+              'X-API-KEY': XPAY_KEY,
+              'Authorization': 'Bearer ' + XPAY_KEY,
               'Accept': 'application/json'
             }
           });
           if (resDirect.ok) {
             var rDirect = await resDirect.json();
-            st = String((rDirect.data && rDirect.data.status) || rDirect.status || '').toUpperCase();
+            var d = (rDirect && rDirect.data) || {};
+            var s1 = String(d.status || '').toUpperCase();
+            var s2 = String(d.paymentStatus || '').toUpperCase();
+            if (s1 === 'COMPLETED' || s2 === 'PAID' || s2 === 'RECIEVED') {
+              st = 'PAID';
+            } else {
+              st = s1 || s2;
+            }
           }
         }
 

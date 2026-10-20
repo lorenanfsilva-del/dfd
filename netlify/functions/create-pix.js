@@ -1,11 +1,10 @@
 /**
  * Netlify Function: create-pix
- * Integração com Gateway Bynet (https://docs.techbynet.com/)
+ * Integração com Gateway XPay Brasil (https://docs.xpaybrasil.com/docs)
  */
 
-const TECHBYNET_API_URL = "https://api-gateway.techbynet.com/api/user/transactions";
-const TECHBYNET_KEY = process.env.TECHBYNET_KEY || "f3496353-b145-431a-91ac-1e47968b5b6f";
-const USER_AGENT = "AtivoB2B/1.0";
+const XPAY_API_URL = "https://api.xpaybrasil.com/v1/charge/pix";
+const XPAY_KEY = process.env.XPAY_KEY || "cpk_live_ex84lopcp2xexagmazz6za11";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -16,7 +15,7 @@ const CORS_HEADERS = {
 
 function formatCpf(val) {
   const digits = String(val || "").replace(/\D/g, "");
-  return digits || "07580365316";
+  return digits.length === 11 ? digits : "07580365316";
 }
 
 function formatPhone(val) {
@@ -54,7 +53,6 @@ exports.handler = async (event) => {
     let amountInCents = 3684; // Fallback padrão (R$ 36,84)
 
     if (typeof rawAmount === "number") {
-      // Se vier float como 36.84 ou centavos como 3684
       if (rawAmount > 0 && rawAmount < 500) {
         amountInCents = Math.round(rawAmount * 100);
       } else if (rawAmount >= 500) {
@@ -71,68 +69,33 @@ exports.handler = async (event) => {
       }
     }
 
+    // Garante mínimo exigido pela XPay (500 centavos = R$ 5,00)
+    if (amountInCents < 500) amountInCents = 500;
+
     const customerData = body.customer || {};
-    const cpfClean = formatCpf(customerData.cpf || customerData.document || body.cpf || body.document);
+    const cpfClean = formatCpf(customerData.cpf || customerData.document || customerData.taxId || body.cpf || body.document || body.taxId);
     const nameClean = customerData.name || body.name || "Cliente";
     const emailClean = customerData.email || body.email || `cliente${cpfClean.slice(0, 6)}@email.com`;
     const phoneClean = formatPhone(customerData.phone || body.phone);
-    const title = body.title || body.description || "Liberacao de Credito";
+    const externalId = body.externalId || `charge_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
     const payload = {
       amount: amountInCents,
-      paymentMethod: "PIX",
+      expiresIn: 1800,
+      externalId: externalId,
       customer: {
+        taxId: cpfClean,
         name: nameClean,
         email: emailClean,
-        document: {
-          number: cpfClean,
-          type: "CPF"
-        },
-        phone: phoneClean,
-        externalRef: body.externalRef || `cli-${Date.now()}`,
-        address: {
-          street: "Avenida Paulista",
-          streetNumber: "1000",
-          complement: "Sala 1",
-          zipCode: "01310-100",
-          neighborhood: "Bela Vista",
-          city: "Sao Paulo",
-          state: "SP",
-          country: "BR"
-        }
-      },
-      shipping: {
-        fee: 0,
-        address: {
-          street: "Avenida Paulista",
-          streetNumber: "1000",
-          complement: "Sala 1",
-          zipCode: "01310-100",
-          neighborhood: "Bela Vista",
-          city: "Sao Paulo",
-          state: "SP",
-          country: "BR"
-        }
-      },
-      items: [
-        {
-          title: title,
-          unitPrice: amountInCents,
-          quantity: 1,
-          tangible: false,
-          externalRef: `item-${Date.now()}`
-        }
-      ],
-      pix: {
-        expiresInDays: 1
+        phone: phoneClean
       }
     };
 
-    const response = await fetch(TECHBYNET_API_URL, {
+    const response = await fetch(XPAY_API_URL, {
       method: "POST",
       headers: {
-        "x-api-key": TECHBYNET_KEY,
-        "User-Agent": USER_AGENT,
+        "X-API-KEY": XPAY_KEY,
+        "Authorization": `Bearer ${XPAY_KEY}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify(payload)
@@ -145,15 +108,15 @@ exports.handler = async (event) => {
         statusCode: response.status || 400,
         headers: CORS_HEADERS,
         body: JSON.stringify({
-          error: resData.message || "Erro ao gerar cobrança no gateway Bynet",
+          error: resData.message || "Erro ao gerar cobrança no gateway XPay Brasil",
           details: resData
         })
       };
     }
 
-    const tx = resData.data || {};
-    const qrCode = tx.qrCode || (tx.pix && tx.pix.qrcode) || "";
-    const txId = tx.id || resData.transactionId || "";
+    const txId = resData.id || "";
+    const brCode = resData.brCode || "";
+    const brCodeBase64 = resData.brCodeBase64 || "";
 
     return {
       statusCode: 200,
@@ -162,10 +125,11 @@ exports.handler = async (event) => {
         success: true,
         transactionId: txId,
         id: txId,
-        qrCode: qrCode,
-        pixCopiaECola: qrCode,
-        status: tx.status || "WAITING_PAYMENT",
-        data: tx
+        qrCode: brCode,
+        pixCopiaECola: brCode,
+        qrCodeBase64: brCodeBase64,
+        status: resData.status || "PROCESSING",
+        data: resData
       })
     };
 

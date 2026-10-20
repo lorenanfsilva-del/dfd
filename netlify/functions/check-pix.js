@@ -1,11 +1,10 @@
 /**
  * Netlify Function: check-pix
- * Consulta de status de transação no Gateway Bynet (https://docs.techbynet.com/)
+ * Consulta de status de transação no Gateway XPay Brasil (https://docs.xpaybrasil.com/docs)
  */
 
-const TECHBYNET_API_BASE = "https://api-gateway.techbynet.com/api/user/transactions";
-const TECHBYNET_KEY = process.env.TECHBYNET_KEY || "f3496353-b145-431a-91ac-1e47968b5b6f";
-const USER_AGENT = "AtivoB2B/1.0";
+const XPAY_API_BASE = "https://api.xpaybrasil.com/v1/charge";
+const XPAY_KEY = process.env.XPAY_KEY || "cpk_live_ex84lopcp2xexagmazz6za11";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -42,11 +41,11 @@ exports.handler = async (event) => {
       };
     }
 
-    const response = await fetch(`${TECHBYNET_API_BASE}/${encodeURIComponent(id)}/summary`, {
+    const response = await fetch(`${XPAY_API_BASE}/${encodeURIComponent(id)}`, {
       method: "GET",
       headers: {
-        "x-api-key": TECHBYNET_KEY,
-        "User-Agent": USER_AGENT,
+        "X-API-KEY": XPAY_KEY,
+        "Authorization": `Bearer ${XPAY_KEY}`,
         "Accept": "application/json"
       }
     });
@@ -58,7 +57,7 @@ exports.handler = async (event) => {
         statusCode: response.status || 400,
         headers: CORS_HEADERS,
         body: JSON.stringify({
-          error: resData.message || "Erro ao consultar status no gateway Bynet",
+          error: resData.message || "Erro ao consultar status no gateway XPay Brasil",
           details: resData
         })
       };
@@ -66,7 +65,8 @@ exports.handler = async (event) => {
 
     const tx = resData.data || {};
     const rawStatus = (tx.status || "").toUpperCase();
-    const isPaid = (rawStatus === "PAID" || rawStatus === "APPROVED" || rawStatus === "COMPLETED");
+    const paymentStatus = (tx.paymentStatus || "").toUpperCase();
+    const isPaid = (rawStatus === "COMPLETED" || paymentStatus === "PAID" || paymentStatus === "RECIEVED");
 
     return {
       statusCode: 200,
@@ -74,7 +74,8 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         success: true,
         id: tx.id || id,
-        status: rawStatus,
+        status: isPaid ? "PAID" : rawStatus,
+        paymentStatus: paymentStatus,
         paid: isPaid,
         data: tx
       })
